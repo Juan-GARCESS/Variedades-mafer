@@ -46,7 +46,7 @@ export default function LoginPage() {
             Papelería
           </h2>
           <p className="text-gray-400 text-base sm:text-lg mb-8 lg:mb-12">
-            Sistema de gestión completo para tu negocio
+            Sistema de gestión
           </p>
 
           <div className="hidden md:flex flex-col space-y-6 max-w-md mx-auto lg:mx-0">
