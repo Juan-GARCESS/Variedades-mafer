@@ -13,13 +13,6 @@ export interface Employee {
   email: string;
   name: string;
   role: 'admin' | 'employee';
-  permissions: {
-    productos: boolean;
-    ventas: boolean;
-    historial: boolean;
-    servicios: boolean;
-  };
-  active: boolean;
 }
 
 export async function validateUser(email: string, password: string): Promise<User | null> {
@@ -68,24 +61,4 @@ export async function createUser(email: string, password: string, name: string, 
     console.error('Error creating user:', error);
     throw error;
   }
-}
-
-export function updateEmployee(id: string, updates: Partial<Employee>): Employee | null {
-  const index = employees.findIndex(e => e.id === id);
-  if (index === -1) return null;
-  
-  employees[index] = { ...employees[index], ...updates };
-  return employees[index];
-}
-
-export function deleteEmployee(id: string): boolean {
-  const index = employees.findIndex(e => e.id === id);
-  if (index === -1) return false;
-  
-  employees.splice(index, 1);
-  return true;
-}
-
-export function getEmployees(): Employee[] {
-  return employees;
 }
