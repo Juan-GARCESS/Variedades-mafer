@@ -65,14 +65,23 @@ model SaleItem {
   createdAt       DateTime @default(now())
 }
 
+model ServiceType {
+  id        String    @id @default(cuid())
+  nombre    String    @unique
+  services  Service[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 model Service {
-  id          String   @id @default(cuid())
-  nombre      String
-  descripcion String
-  precio      Float
-  fecha       DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String      @id @default(cuid())
+  fecha         DateTime    @default(now())
+  descripcion   String
+  monto         Float
+  serviceTypeId String
+  serviceType   ServiceType @relation(fields: [serviceTypeId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model ExpenseCategory {

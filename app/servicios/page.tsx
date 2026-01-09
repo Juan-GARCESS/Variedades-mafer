@@ -5,14 +5,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
-import { Briefcase, Plus, Trash2, DollarSign } from 'lucide-react';
+import { Briefcase, Plus, Trash2, DollarSign, Settings } from 'lucide-react';
+
+interface ServiceType {
+  id: string;
+  nombre: string;
+}
 
 interface AdditionalService {
   id: string;
   fecha: string;
   descripcion: string;
   monto: number;
-  tipo: 'servicio' | 'venta-externa';
+  serviceTypeId?: string;
+  serviceType?: ServiceType;
 }
 
 export default function ServiciosPage() {
@@ -20,13 +26,17 @@ export default function ServiciosPage() {
   const { showToast } = useToast();
   const router = useRouter();
   const [services, setServices] = useState<AdditionalService[]>([]);
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [showManageTypesModal, setShowManageTypesModal] = useState(false);
+  const [newTypeName, setNewTypeName] = useState('');
+  const [editingType, setEditingType] = useState<{ id: string; nombre: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
   const [newService, setNewService] = useState({
     descripcion: '',
     monto: '',
-    tipo: 'servicio' as 'servicio' | 'venta-externa',
+    serviceTypeId: '',
     fecha: new Date().toISOString().split('T')[0]
   });
 
@@ -39,6 +49,7 @@ export default function ServiciosPage() {
   useEffect(() => {
     if (user) {
       fetchServices();
+      fetchServiceTypes();
     }
   }, [user]);
 
@@ -48,15 +59,93 @@ export default function ServiciosPage() {
     setServices(data);
   };
 
+  const fetchServiceTypes = async () => {
+    const response = await fetch('/api/service-types');
+    const data = await response.json();
+    setServiceTypes(data);
+  };
+
+  const handleAddServiceType = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTypeName.trim()) return;
+
+    try {
+      if (editingType) {
+        // Editar tipo existente
+        const response = await fetch(`/api/service-types?id=${editingType.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nombre: newTypeName })
+        });
+
+        if (response.ok) {
+          showToast('Tipo de servicio actualizado exitosamente', 'success');
+          setNewTypeName('');
+          setEditingType(null);
+          fetchServiceTypes();
+        } else {
+          const error = await response.json();
+          showToast(error.error || 'Error al actualizar tipo de servicio', 'error');
+        }
+      } else {
+        // Crear nuevo tipo
+        const response = await fetch('/api/service-types', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nombre: newTypeName })
+        });
+
+        if (response.ok) {
+          showToast('Tipo de servicio agregado exitosamente', 'success');
+          setNewTypeName('');
+          fetchServiceTypes();
+        } else {
+          const error = await response.json();
+          showToast(error.error || 'Error al agregar tipo de servicio', 'error');
+        }
+      }
+    } catch (error) {
+      showToast('Error al procesar tipo de servicio', 'error');
+    }
+  };
+
+  const handleDeleteServiceType = async (id: string, nombre: string) => {
+    if (!confirm(`¿Eliminar el tipo "${nombre}"?`)) return;
+
+    try {
+      const response = await fetch(`/api/service-types?id=${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        showToast('Tipo de servicio eliminado exitosamente', 'success');
+        fetchServiceTypes();
+      } else {
+        const error = await response.json();
+        showToast(error.error || 'Error al eliminar tipo de servicio', 'error');
+      }
+    } catch (error) {
+      showToast('Error al eliminar tipo de servicio', 'error');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!newService.serviceTypeId) {
+      showToast('Por favor selecciona un tipo de servicio', 'error');
+      return;
+    }
+    
     try {
       const response = await fetch('/api/servicios', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...newService,
-          monto: parseFloat(newService.monto)
+          descripcion: newService.descripcion,
+          monto: parseFloat(newService.monto),
+          serviceTypeId: newService.serviceTypeId,
+          fecha: newService.fecha
         })
       });
       
@@ -66,7 +155,7 @@ export default function ServiciosPage() {
         setNewService({
           descripcion: '',
           monto: '',
-          tipo: 'servicio',
+          serviceTypeId: '',
           fecha: new Date().toISOString().split('T')[0]
         });
         fetchServices();
@@ -119,13 +208,22 @@ export default function ServiciosPage() {
               Registra ventas y servicios no relacionados con el inventario de productos
             </p>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center justify-center space-x-2 bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-gray-800 transition-colors w-full md:w-auto"
-          >
-            <Plus size={20} />
-            <span>Nuevo Servicio</span>
-          </button>
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+            <button
+              onClick={() => setShowManageTypesModal(true)}
+              className="flex items-center justify-center space-x-2 bg-white border-2 border-black text-black px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-gray-50 transition-colors w-full sm:w-auto"
+            >
+              <Settings size={20} />
+              <span>Gestionar Tipos</span>
+            </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center justify-center space-x-2 bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-gray-800 transition-colors w-full sm:w-auto"
+            >
+              <Plus size={20} />
+              <span>Nuevo Servicio</span>
+            </button>
+          </div>
         </div>
 
         {/* Información descriptiva */}
@@ -180,7 +278,7 @@ export default function ServiciosPage() {
                   Fecha
                 </th>
                 <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tipo
+                  Tipo de Servicio
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Descripción
@@ -200,12 +298,8 @@ export default function ServiciosPage() {
                     {service.fecha}
                   </td>
                   <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      service.tipo === 'servicio'
-                        ? 'bg-black text-white'
-                        : 'bg-gray-200 text-gray-800'
-                    }`}>
-                      {service.tipo === 'servicio' ? 'Servicio' : 'Venta Externa'}
+                    <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-black text-white">
+                      {service.serviceType?.nombre || 'Sin categoría'}
                     </span>
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900">
@@ -276,15 +370,18 @@ export default function ServiciosPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tipo
+                  Tipo de Servicio
                 </label>
                 <select
-                  value={newService.tipo}
-                  onChange={(e) => setNewService({ ...newService, tipo: e.target.value as any })}
+                  value={newService.serviceTypeId}
+                  onChange={(e) => setNewService({ ...newService, serviceTypeId: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black"
+                  required
                 >
-                  <option value="servicio">Servicio</option>
-                  <option value="venta-externa">Venta Externa</option>
+                  <option value="">Selecciona un tipo</option>
+                  {serviceTypes.map(type => (
+                    <option key={type.id} value={type.id}>{type.nombre}</option>
+                  ))}
                 </select>
               </div>
 
@@ -297,7 +394,7 @@ export default function ServiciosPage() {
                   value={newService.descripcion}
                   onChange={(e) => setNewService({ ...newService, descripcion: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black"
-                  placeholder="Ej: Fotocopias (50 páginas)"
+                  placeholder="Ej: 50 copias a color"
                   required
                 />
               </div>
@@ -349,6 +446,89 @@ export default function ServiciosPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para gestionar tipos de servicios */}
+      {showManageTypesModal && (
+        <div className="fixed inset-0 backdrop-blur-md bg-white/10 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-lg p-6 sm:p-8 max-w-full sm:max-w-md w-full border-4 border-black shadow-2xl">
+            <h2 className="text-2xl font-bold text-black mb-6">
+              Gestionar Tipos de Servicios
+            </h2>
+            
+            <form onSubmit={handleAddServiceType} className="mb-6">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={newTypeName}
+                  onChange={(e) => setNewTypeName(e.target.value)}
+                  placeholder={editingType ? "Editar tipo de servicio" : "Nuevo tipo de servicio"}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black"
+                />
+                {editingType && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingType(null);
+                      setNewTypeName('');
+                    }}
+                    className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  {editingType ? '✓' : <Plus size={20} />}
+                </button>
+              </div>
+            </form>
+
+            <div className="space-y-2 mb-6 max-h-64 overflow-y-auto">
+              {serviceTypes.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No hay tipos de servicios registrados</p>
+              ) : (
+                serviceTypes.map(type => (
+                  <div key={type.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <span className="text-black font-medium">{type.nombre}</span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => {
+                          setEditingType(type);
+                          setNewTypeName(type.nombre);
+                        }}
+                        className="text-white bg-gray-600 hover:bg-gray-700 p-2 rounded transition-colors"
+                        title="Editar"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDeleteServiceType(type.id, type.nombre)}
+                        className="text-white bg-black hover:bg-gray-800 p-2 rounded transition-colors"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <button
+              onClick={() => {
+                setShowManageTypesModal(false);
+                setEditingType(null);
+                setNewTypeName('');
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Cerrar
+            </button>
           </div>
         </div>
       )}
