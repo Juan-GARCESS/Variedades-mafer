@@ -15,10 +15,18 @@ export async function GET() {
     });
     
     // Obtener servicios
-    const services = await prisma.service.findMany();
+    const services = await prisma.service.findMany({
+      include: {
+        serviceType: true
+      }
+    });
     
     // Obtener egresos
-    const expenses = await prisma.expense.findMany();
+    const expenses = await prisma.expense.findMany({
+      include: {
+        expenseCategory: true
+      }
+    });
     
     // Formatear historial
     const history = [
@@ -33,8 +41,8 @@ export async function GET() {
         id: service.id,
         tipo: 'servicio' as const,
         fecha: service.fecha.toISOString().split('T')[0],
-        descripcion: service.nombre,
-        monto: service.precio
+        descripcion: service.descripcion,
+        monto: service.monto
       })),
       ...expenses.map(expense => ({
         id: expense.id,
