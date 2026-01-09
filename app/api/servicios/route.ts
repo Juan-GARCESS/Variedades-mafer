@@ -22,7 +22,8 @@ export async function GET() {
     return NextResponse.json(formattedServices);
   } catch (error) {
     console.error('Error fetching services:', error);
-    return NextResponse.json({ error: 'Error al obtener servicios' }, { status: 500 });
+    // Devolver array vacío en caso de error
+    return NextResponse.json([]);
   }
 }
 

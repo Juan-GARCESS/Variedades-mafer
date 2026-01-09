@@ -59,6 +59,7 @@ export async function GET() {
     return NextResponse.json(history);
   } catch (error) {
     console.error('Error fetching history:', error);
-    return NextResponse.json({ error: 'Error al obtener historial' }, { status: 500 });
+    // Devolver array vacío en caso de error
+    return NextResponse.json([]);
   }
 }
