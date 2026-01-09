@@ -224,15 +224,17 @@ export default function ProductosPage() {
         <div className="mb-6 sm:mb-8 flex flex-col md:flex-row md:justify-between md:items-center space-y-4 md:space-y-0">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-black">Inventario de Productos</h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">Gestiona tu inventario de productos y controla el stock</p>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">{user?.role === 'admin' ? 'Gestiona tu inventario de productos y controla el stock' : 'Consulta el inventario de productos disponibles'}</p>
           </div>
-          <button
-            onClick={handleAddProduct}
-            className="flex items-center justify-center space-x-2 bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-gray-800 transition-colors w-full md:w-auto"
-          >
-            <Plus size={20} />
-            <span>Agregar Producto</span>
-          </button>
+          {user?.role === 'admin' && (
+            <button
+              onClick={handleAddProduct}
+              className="flex items-center justify-center space-x-2 bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-gray-800 transition-colors w-full md:w-auto"
+            >
+              <Plus size={20} />
+              <span>Agregar Producto</span>
+            </button>
+          )}
         </div>
 
         <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
@@ -262,7 +264,9 @@ export default function ProductosPage() {
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Actual</th>
                 <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Mínimo</th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                {user?.role === 'admin' && (
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                )}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -296,24 +300,26 @@ export default function ProductosPage() {
                   <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {product.stockMinimo}
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
-                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                    <button
-                      onClick={() => handleEditProduct(product)}
-                      className="inline-flex items-center justify-center px-2 sm:px-3 py-1 border-2 border-black text-black rounded hover:bg-black hover:text-white transition-colors font-medium text-xs sm:text-sm"
-                    >
-                      <Edit size={14} className="sm:mr-1" />
-                      <span className="hidden sm:inline">Gestionar</span>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteProduct(product.id, product.nombre)}
-                      className="inline-flex items-center justify-center px-2 sm:px-3 py-1 bg-black text-white rounded hover:bg-gray-800 transition-colors font-medium text-xs sm:text-sm"
-                    >
-                      <Trash2 size={14} className="sm:mr-1" />
-                      <span className="hidden sm:inline">Eliminar</span>
-                    </button>
-                    </div>
-                  </td>
+                  {user?.role === 'admin' && (
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
+                      <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                      <button
+                        onClick={() => handleEditProduct(product)}
+                        className="inline-flex items-center justify-center px-2 sm:px-3 py-1 border-2 border-black text-black rounded hover:bg-black hover:text-white transition-colors font-medium text-xs sm:text-sm"
+                      >
+                        <Edit size={14} className="sm:mr-1" />
+                        <span className="hidden sm:inline">Gestionar</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProduct(product.id, product.nombre)}
+                        className="inline-flex items-center justify-center px-2 sm:px-3 py-1 bg-black text-white rounded hover:bg-gray-800 transition-colors font-medium text-xs sm:text-sm"
+                      >
+                        <Trash2 size={14} className="sm:mr-1" />
+                        <span className="hidden sm:inline">Eliminar</span>
+                      </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
