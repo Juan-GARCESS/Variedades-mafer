@@ -51,7 +51,8 @@ export async function GET() {
           hora: dateTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
           descripcion: service.descripcion,
           monto: service.monto,
-          signo: '+' as const
+          signo: '+' as const,
+          serviceTypeName: service.serviceType?.nombre || 'Sin categoría'
         };
       }),
       ...expenses.map(expense => {

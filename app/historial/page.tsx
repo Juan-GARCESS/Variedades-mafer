@@ -14,6 +14,7 @@ interface HistoryEntry {
   descripcion: string;
   monto: number;
   signo: '+' | '-';
+  serviceTypeName?: string;
 }
 
 export default function HistorialPage() {
@@ -22,6 +23,7 @@ export default function HistorialPage() {
   const [historyData, setHistoryData] = useState<HistoryEntry[]>([]);
   const [filteredData, setFilteredData] = useState<HistoryEntry[]>([]);
   const [filterType, setFilterType] = useState<'todos' | 'ingresos' | 'egresos'>('todos');
+  const [filterServiceType, setFilterServiceType] = useState<string>('todos');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,7 +44,7 @@ export default function HistorialPage() {
   useEffect(() => {
     applyFilters();
     setCurrentPage(1); // Reset to first page when filters change
-  }, [historyData, filterType, startDate, endDate]);
+  }, [historyData, filterType, filterServiceType, startDate, endDate]);
 
   const fetchHistory = async () => {
     try {
@@ -69,6 +71,11 @@ export default function HistorialPage() {
       filtered = filtered.filter(entry => entry.signo === '-');
     }
 
+    // Filtrar por tipo de servicio
+    if (filterServiceType !== 'todos') {
+      filtered = filtered.filter(entry => entry.serviceTypeName === filterServiceType);
+    }
+
     // Filtrar por fechas
     if (startDate) {
       filtered = filtered.filter(entry => entry.fecha >= startDate);
@@ -78,6 +85,13 @@ export default function HistorialPage() {
     }
 
     setFilteredData(filtered);
+  };
+
+  const getUniqueServiceTypes = () => {
+    const types = historyData
+      .filter(entry => entry.serviceTypeName)
+      .map(entry => entry.serviceTypeName!);
+    return ['todos', ...Array.from(new Set(types))];
   };
 
   const getTotalIngresos = () => {
@@ -90,10 +104,6 @@ export default function HistorialPage() {
     return filteredData
       .filter(entry => entry.signo === '-')
       .reduce((sum, entry) => sum + Math.abs(entry.monto), 0);
-  };
-
-  const getBalance = () => {
-    return getTotalIngresos() - getTotalEgresos();
   };
 
   const getTipoLabel = (tipo: string) => {
@@ -135,7 +145,7 @@ export default function HistorialPage() {
         </div>
 
         {/* Tarjetas de resumen */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 shadow-sm">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <h3 className="text-xs sm:text-sm font-medium text-gray-600">Total Ingresos</h3>
@@ -155,16 +165,6 @@ export default function HistorialPage() {
               ${getTotalEgresos().toLocaleString('es-CO')} COP
             </p>
           </div>
-
-          <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <h3 className="text-xs sm:text-sm font-medium text-gray-600">Balance</h3>
-              <History className="text-black" size={20} />
-            </div>
-            <p className={`text-2xl sm:text-3xl font-bold ${getBalance() >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ${getBalance().toLocaleString('es-CO')} COP
-            </p>
-          </div>
         </div>
 
         {/* Filtros */}
@@ -174,7 +174,7 @@ export default function HistorialPage() {
             <h2 className="text-base sm:text-lg font-semibold text-black">Filtros</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                 Tipo de Transacción
@@ -187,6 +187,23 @@ export default function HistorialPage() {
                 <option value="todos">Todos</option>
                 <option value="ingresos">Solo Ingresos</option>
                 <option value="egresos">Solo Egresos</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                Tipo de Servicio
+              </label>
+              <select
+                value={filterServiceType}
+                onChange={(e) => setFilterServiceType(e.target.value)}
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black"
+              >
+                {getUniqueServiceTypes().map((type) => (
+                  <option key={type} value={type}>
+                    {type === 'todos' ? 'Todos los servicios' : type}
+                  </option>
+                ))}
               </select>
             </div>
 
