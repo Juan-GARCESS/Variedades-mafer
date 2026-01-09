@@ -30,27 +30,42 @@ export async function GET() {
     
     // Formatear historial
     const history = [
-      ...sales.map(sale => ({
-        id: sale.id,
-        tipo: 'venta' as const,
-        fecha: sale.fecha.toISOString().split('T')[0],
-        descripcion: `Venta de ${sale.items.length} producto(s)`,
-        monto: sale.total
-      })),
-      ...services.map(service => ({
-        id: service.id,
-        tipo: 'servicio' as const,
-        fecha: service.fecha.toISOString().split('T')[0],
-        descripcion: service.descripcion,
-        monto: service.monto
-      })),
-      ...expenses.map(expense => ({
-        id: expense.id,
-        tipo: 'egreso' as const,
-        fecha: expense.fecha.toISOString().split('T')[0],
-        descripcion: expense.descripcion,
-        monto: -expense.monto // Negativo para egresos
-      }))
+      ...sales.map(sale => {
+        const dateTime = new Date(sale.fecha);
+        return {
+          id: sale.id,
+          tipo: 'venta-producto' as const,
+          fecha: dateTime.toISOString().split('T')[0],
+          hora: dateTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+          descripcion: `Venta de ${sale.items.length} producto(s)`,
+          monto: sale.total,
+          signo: '+' as const
+        };
+      }),
+      ...services.map(service => {
+        const dateTime = new Date(service.fecha);
+        return {
+          id: service.id,
+          tipo: 'servicio-adicional' as const,
+          fecha: dateTime.toISOString().split('T')[0],
+          hora: dateTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+          descripcion: service.descripcion,
+          monto: service.monto,
+          signo: '+' as const
+        };
+      }),
+      ...expenses.map(expense => {
+        const dateTime = new Date(expense.fecha);
+        return {
+          id: expense.id,
+          tipo: 'ingreso-producto' as const,
+          fecha: dateTime.toISOString().split('T')[0],
+          hora: dateTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+          descripcion: expense.descripcion,
+          monto: expense.monto,
+          signo: '-' as const
+        };
+      })
     ];
     
     // Ordenar por fecha descendente

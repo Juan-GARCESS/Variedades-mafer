@@ -89,7 +89,7 @@ export default function HistorialPage() {
   const getTotalEgresos = () => {
     return filteredData
       .filter(entry => entry.signo === '-')
-      .reduce((sum, entry) => sum + entry.monto, 0);
+      .reduce((sum, entry) => sum + Math.abs(entry.monto), 0);
   };
 
   const getBalance = () => {
@@ -263,7 +263,7 @@ export default function HistorialPage() {
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
                     <span className={entry.signo === '+' ? 'text-green-600' : 'text-red-600'}>
-                      ${entry.monto.toLocaleString('es-CO')}
+                      ${Math.abs(entry.monto).toLocaleString('es-CO')}
                     </span>
                   </td>
                 </tr>
