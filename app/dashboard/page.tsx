@@ -20,10 +20,23 @@ interface Product {
   };
 }
 
+interface ProductoMasVendido {
+  id: string;
+  nombre: string;
+  precio: number;
+  stock: number;
+  categoria: {
+    id: string;
+    nombre: string;
+  };
+  totalVendido: number;
+}
+
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
+  const [productosMasVendidos, setProductosMasVendidos] = useState<ProductoMasVendido[]>([]);
   const [stats, setStats] = useState({
     totalProductos: 0,
     productosStockBajo: 0,
@@ -41,6 +54,7 @@ export default function DashboardPage() {
     if (user) {
       fetchProducts();
       fetchStats();
+      fetchProductosMasVendidos();
     }
   }, [user]);
 
@@ -48,6 +62,12 @@ export default function DashboardPage() {
     const response = await fetch('/api/productos');
     const data = await response.json();
     setProducts(data);
+  };
+
+  const fetchProductosMasVendidos = async () => {
+    const response = await fetch('/api/dashboard/productos-mas-vendidos');
+    const data = await response.json();
+    setProductosMasVendidos(data);
   };
 
   const fetchStats = async () => {
@@ -80,7 +100,6 @@ export default function DashboardPage() {
   }
 
   const productosStockBajo = products.filter(p => p.stock <= p.stockMinimo);
-  const productosMasVendidos = products.slice(0, 4);
 
   return (
     <div className="min-h-screen bg-white">
@@ -172,25 +191,29 @@ export default function DashboardPage() {
               Los productos más populares
             </p>
             
-            <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-              {productosMasVendidos.map((producto, index) => (
-                <div key={producto.id} className="flex justify-between items-center border-b border-gray-100 pb-3">
-                  <div className="flex items-center">
-                    <span className="bg-black text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">
-                      #{index + 1}
-                    </span>
-                    <div>
-                      <p className="font-medium text-black">{producto.nombre}</p>
-                      <p className="text-sm text-gray-500">{producto.categoria.nombre}</p>
+            {productosMasVendidos.length === 0 ? (
+              <p className="text-gray-500">No hay ventas registradas aún</p>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                {productosMasVendidos.map((producto, index) => (
+                  <div key={producto.id} className="flex justify-between items-center border-b border-gray-100 pb-3">
+                    <div className="flex items-center">
+                      <span className="bg-black text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">
+                        #{index + 1}
+                      </span>
+                      <div>
+                        <p className="font-medium text-black">{producto.nombre}</p>
+                        <p className="text-sm text-gray-500">{producto.categoria.nombre}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-black">${producto.precio.toLocaleString('es-CO')} COP</p>
+                      <p className="text-sm text-gray-500">Stock: {producto.stock}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-black">${producto.precio.toLocaleString('es-CO')} COP</p>
-                    <p className="text-sm text-gray-500">Stock: {producto.stock}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
