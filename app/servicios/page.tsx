@@ -327,13 +327,15 @@ export default function ServiciosPage() {
                     ${service.monto.toLocaleString('es-CO')}
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
-                    <button 
-                      onClick={() => handleDeleteService(service.id, service.descripcion)}
-                      className="text-white bg-black hover:bg-gray-800 inline-flex items-center px-2 sm:px-3 py-1 rounded"
-                    >
-                      <Trash2 size={14} className="sm:mr-1" />
-                      <span className="hidden sm:inline">Eliminar</span>
-                    </button>
+                    {user?.role === 'admin' && (
+                      <button 
+                        onClick={() => handleDeleteService(service.id, service.descripcion)}
+                        className="text-white bg-black hover:bg-gray-800 inline-flex items-center px-2 sm:px-3 py-1 rounded"
+                      >
+                        <Trash2 size={14} className="sm:mr-1" />
+                        <span className="hidden sm:inline">Eliminar</span>
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
