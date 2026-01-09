@@ -54,15 +54,33 @@ export default function ServiciosPage() {
   }, [user]);
 
   const fetchServices = async () => {
-    const response = await fetch('/api/servicios');
-    const data = await response.json();
-    setServices(data);
+    try {
+      const response = await fetch('/api/servicios');
+      if (!response.ok) {
+        setServices([]);
+        return;
+      }
+      const data = await response.json();
+      setServices(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      setServices([]);
+    }
   };
 
   const fetchServiceTypes = async () => {
-    const response = await fetch('/api/service-types');
-    const data = await response.json();
-    setServiceTypes(data);
+    try {
+      const response = await fetch('/api/service-types');
+      if (!response.ok) {
+        setServiceTypes([]);
+        return;
+      }
+      const data = await response.json();
+      setServiceTypes(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching service types:', error);
+      setServiceTypes([]);
+    }
   };
 
   const handleAddServiceType = async (e: React.FormEvent) => {
