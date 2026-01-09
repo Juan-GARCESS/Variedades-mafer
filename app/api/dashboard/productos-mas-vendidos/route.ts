@@ -4,11 +4,11 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     // Obtener todas las ventas con sus items
-    const ventas = await prisma.venta.findMany({
+    const ventas = await prisma.sale.findMany({
       include: {
         items: {
           include: {
-            producto: {
+            product: {
               include: {
                 categoria: true
               }
@@ -23,12 +23,12 @@ export async function GET() {
 
     ventas.forEach(venta => {
       venta.items.forEach(item => {
-        const productoId = item.productoId;
+        const productoId = item.productId;
         if (productosVendidos[productoId]) {
           productosVendidos[productoId].totalVendido += item.cantidad;
         } else {
           productosVendidos[productoId] = {
-            producto: item.producto,
+            producto: item.product,
             totalVendido: item.cantidad
           };
         }
