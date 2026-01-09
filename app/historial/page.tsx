@@ -45,9 +45,18 @@ export default function HistorialPage() {
   }, [historyData, filterType, startDate, endDate]);
 
   const fetchHistory = async () => {
-    const response = await fetch('/api/historial');
-    const data = await response.json();
-    setHistoryData(data);
+    try {
+      const response = await fetch('/api/historial');
+      if (!response.ok) {
+        setHistoryData([]);
+        return;
+      }
+      const data = await response.json();
+      setHistoryData(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching history:', error);
+      setHistoryData([]);
+    }
   };
 
   const applyFilters = () => {

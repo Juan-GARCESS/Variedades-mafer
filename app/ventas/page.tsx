@@ -54,15 +54,33 @@ export default function VentasPage() {
   }, [user]);
 
   const fetchSales = async () => {
-    const response = await fetch('/api/ventas');
-    const data = await response.json();
-    setSales(data);
+    try {
+      const response = await fetch('/api/ventas');
+      if (!response.ok) {
+        setSales([]);
+        return;
+      }
+      const data = await response.json();
+      setSales(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching sales:', error);
+      setSales([]);
+    }
   };
 
   const fetchProducts = async () => {
-    const response = await fetch('/api/productos');
-    const data = await response.json();
-    setProducts(data);
+    try {
+      const response = await fetch('/api/productos');
+      if (!response.ok) {
+        setProducts([]);
+        return;
+      }
+      const data = await response.json();
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      setProducts([]);
+    }
   };
 
   const handleAddProduct = () => {

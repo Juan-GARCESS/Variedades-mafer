@@ -53,15 +53,33 @@ export default function EgresosPage() {
   }, [user]);
 
   const fetchExpenses = async () => {
-    const response = await fetch('/api/egresos');
-    const data = await response.json();
-    setExpenses(data);
+    try {
+      const response = await fetch('/api/egresos');
+      if (!response.ok) {
+        setExpenses([]);
+        return;
+      }
+      const data = await response.json();
+      setExpenses(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      setExpenses([]);
+    }
   };
 
   const fetchCategories = async () => {
-    const response = await fetch('/api/expense-categories');
-    const data = await response.json();
-    setCategories(data);
+    try {
+      const response = await fetch('/api/expense-categories');
+      if (!response.ok) {
+        setCategories([]);
+        return;
+      }
+      const data = await response.json();
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories([]);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

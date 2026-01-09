@@ -38,9 +38,18 @@ export default function CategoriasPage() {
   }, [user]);
 
   const fetchCategories = async () => {
-    const response = await fetch('/api/categorias');
-    const data = await response.json();
-    setCategories(data);
+    try {
+      const response = await fetch('/api/categorias');
+      if (!response.ok) {
+        setCategories([]);
+        return;
+      }
+      const data = await response.json();
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories([]);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

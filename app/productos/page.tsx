@@ -69,16 +69,37 @@ export default function ProductosPage() {
   }, [searchTerm, products]);
 
   const fetchProducts = async () => {
-    const response = await fetch('/api/productos');
-    const data = await response.json();
-    setProducts(data);
-    setFilteredProducts(data);
+    try {
+      const response = await fetch('/api/productos');
+      if (!response.ok) {
+        setProducts([]);
+        setFilteredProducts([]);
+        return;
+      }
+      const data = await response.json();
+      const validData = Array.isArray(data) ? data : [];
+      setProducts(validData);
+      setFilteredProducts(validData);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      setProducts([]);
+      setFilteredProducts([]);
+    }
   };
 
   const fetchCategories = async () => {
-    const response = await fetch('/api/categorias');
-    const data = await response.json();
-    setCategories(data);
+    try {
+      const response = await fetch('/api/categorias');
+      if (!response.ok) {
+        setCategories([]);
+        return;
+      }
+      const data = await response.json();
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories([]);
+    }
   };
 
   const handleAddProduct = () => {
