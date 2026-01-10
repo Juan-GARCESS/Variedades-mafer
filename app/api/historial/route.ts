@@ -3,9 +3,15 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    // Obtener ventas
+    // Obtener ventas CON información del usuario
     const sales = await prisma.sale.findMany({
       include: {
+        user: {
+          select: {
+            name: true,
+            email: true
+          }
+        },
         items: {
           include: {
             product: true
@@ -32,14 +38,16 @@ export async function GET() {
     const history = [
       ...sales.map(sale => {
         const dateTime = new Date(sale.fecha);
+        const vendedor = sale.user ? sale.user.name : 'Sin asignar';
         return {
           id: sale.id,
           tipo: 'venta-producto' as const,
           fecha: dateTime.toISOString().split('T')[0],
-          hora: dateTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
-          descripcion: `Venta de ${sale.items.length} producto(s)`,
+          hora: dateTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          descripcion: `Venta de ${sale.items.length} producto(s) - ${vendedor}`,
           monto: sale.total,
-          signo: '+' as const
+          signo: '+' as const,
+          vendedor: vendedor
         };
       }),
       ...services.map(service => {

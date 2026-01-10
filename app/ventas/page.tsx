@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 interface Sale {
   id: string;
   fecha: string;
+  hora?: string;
   user?: {
     id: string;
     name: string;
@@ -216,7 +217,12 @@ export default function VentasPage() {
         <div className="mb-6 sm:mb-8 flex flex-col md:flex-row md:justify-between md:items-center space-y-4 md:space-y-0">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-black">Gestión de Ventas</h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">Registra y administra las ventas de productos</p>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">
+              Ventas del día actual - Se actualiza automáticamente a las 12:00 AM
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              El historial completo está en la sección "Historial"
+            </p>
           </div>
           <button
             onClick={() => setShowModal(true)}
@@ -241,13 +247,11 @@ export default function VentasPage() {
                   ID
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha
+                  Fecha y Hora
                 </th>
-                {user?.role === 'admin' && (
-                  <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Vendedor
-                  </th>
-                )}
+                <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Vendedor
+                </th>
                 <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Productos
                 </th>
@@ -269,16 +273,17 @@ export default function VentasPage() {
                     {sale.id}
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                    {sale.fecha}
+                    <div className="flex flex-col">
+                      <span className="font-medium">{sale.fecha}</span>
+                      <span className="text-xs text-gray-500">{sale.hora || '12:00 AM'}</span>
+                    </div>
                   </td>
-                  {user?.role === 'admin' && (
-                    <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="flex flex-col">
-                        <span className="font-medium">{sale.user?.name || 'Sin asignar'}</span>
-                        <span className="text-xs text-gray-500">{sale.user?.email || '-'}</span>
-                      </div>
-                    </td>
-                  )}
+                  <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <div className="flex flex-col">
+                      <span className="font-medium">{sale.user?.name || 'Sin asignar'}</span>
+                      <span className="text-xs text-gray-500">{sale.user?.email || '-'}</span>
+                    </div>
+                  </td>
                   <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-900">
                     <div className="space-y-1">
                       {sale.productos.slice(0, 2).map((item, idx) => {

@@ -18,8 +18,28 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
     
+    // Obtener fecha de HOY (solo ventas del día actual)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
     // Si es empleado, solo ver sus ventas. Si es admin, ver todas
-    const whereClause = user.role === 'admin' ? {} : { userId: user.id };
+    // PERO: Solo ventas de HOY
+    const whereClause = user.role === 'admin' 
+      ? {
+          fecha: {
+            gte: today,
+            lt: tomorrow
+          }
+        }
+      : {
+          userId: user.id,
+          fecha: {
+            gte: today,
+            lt: tomorrow
+          }
+        };
     
     const sales = await prisma.sale.findMany({
       where: whereClause,
@@ -41,24 +61,32 @@ export async function GET(request: Request) {
       orderBy: { fecha: 'desc' }
     });
     
-    // Formatear para el frontend
-    const formattedSales = sales.map(sale => ({
-      id: sale.id,
-      fecha: sale.fecha.toISOString().split('T')[0],
-      total: sale.total,
-      estado: sale.estado,
-      user: sale.user ? {
-        id: sale.user.id,
-        name: sale.user.name,
-        email: sale.user.email,
-        role: sale.user.role
-      } : null,
-      productos: sale.items.map(item => ({
-        productoId: item.productId,
-        cantidad: item.cantidad,
-        precioUnitario: item.precioUnitario
-      }))
-    }));
+    // Formatear para el frontend con HORA exacta
+    const formattedSales = sales.map(sale => {
+      const fechaCompleta = new Date(sale.fecha);
+      return {
+        id: sale.id,
+        fecha: fechaCompleta.toISOString().split('T')[0],
+        hora: fechaCompleta.toLocaleTimeString('es-CO', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        }),
+        total: sale.total,
+        estado: sale.estado,
+        user: sale.user ? {
+          id: sale.user.id,
+          name: sale.user.name,
+          email: sale.user.email,
+          role: sale.user.role
+        } : null,
+        productos: sale.items.map(item => ({
+          productoId: item.productId,
+          cantidad: item.cantidad,
+          precioUnitario: item.precioUnitario
+        }))
+      };
+    });
     
     return NextResponse.json(formattedSales);
   } catch (error) {
