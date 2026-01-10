@@ -15,6 +15,7 @@ interface HistoryEntry {
   monto: number;
   signo: '+' | '-';
   serviceTypeName?: string;
+  vendedor?: string;
 }
 
 export default function HistorialPage() {
@@ -289,6 +290,9 @@ export default function HistorialPage() {
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Descripción
                 </th>
+                <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Vendedor/Usuario
+                </th>
                 <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Signo
                 </th>
@@ -310,7 +314,12 @@ export default function HistorialPage() {
                     </span>
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900">
-                    {entry.descripcion}
+                    <div className="font-medium">{entry.descripcion}</div>
+                  </td>
+                  <td className="hidden lg:table-cell px-6 py-4 text-xs sm:text-sm text-gray-900">
+                    <div className="font-medium text-gray-700">
+                      {entry.vendedor || '-'}
+                    </div>
                   </td>
                   <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
                     <span className={`text-xl sm:text-2xl font-bold ${

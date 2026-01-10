@@ -61,13 +61,16 @@ export async function GET(request: Request) {
       orderBy: { fecha: 'desc' }
     });
     
-    // Formatear para el frontend con HORA exacta
+    // Formatear para el frontend con HORA exacta de Colombia
     const formattedSales = sales.map(sale => {
       const fechaCompleta = new Date(sale.fecha);
+      // Convertir a hora de Colombia
+      const colombiaDate = new Date(fechaCompleta.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+      
       return {
         id: sale.id,
-        fecha: fechaCompleta.toISOString().split('T')[0],
-        hora: fechaCompleta.toLocaleTimeString('es-CO', { 
+        fecha: colombiaDate.toISOString().split('T')[0],
+        hora: colombiaDate.toLocaleTimeString('es-CO', { 
           hour: '2-digit', 
           minute: '2-digit',
           hour12: true 
@@ -142,14 +145,19 @@ export async function POST(request: Request) {
       })
     );
     
+    // Obtener hora actual de Colombia (UTC-5)
+    const now = new Date();
+    const colombiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+    
     // Crear la venta con transacción
     const nuevaVenta = await prisma.$transaction(async (tx) => {
-      // Crear la venta
+      // Crear la venta con hora de Colombia
       const sale = await tx.sale.create({
         data: {
           total,
           estado: estado || 'completada',
           userId: user.id,
+          fecha: colombiaTime, // Hora de Colombia
           items: {
             create: productosVenta
           }

@@ -38,13 +38,21 @@ export async function GET() {
     const history = [
       ...sales.map(sale => {
         const dateTime = new Date(sale.fecha);
+        // Convertir a hora de Colombia
+        const colombiaDate = new Date(dateTime.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
         const vendedor = sale.user ? sale.user.name : 'Sin asignar';
+        
+        // Obtener nombres de productos vendidos
+        const productosNombres = sale.items
+          .map(item => `${item.product.nombre} (x${item.cantidad})`)
+          .join(', ');
+        
         return {
           id: sale.id,
           tipo: 'venta-producto' as const,
-          fecha: dateTime.toISOString().split('T')[0],
-          hora: dateTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }),
-          descripcion: `Venta de ${sale.items.length} producto(s) - ${vendedor}`,
+          fecha: colombiaDate.toISOString().split('T')[0],
+          hora: colombiaDate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          descripcion: productosNombres, // Nombres reales de productos
           monto: sale.total,
           signo: '+' as const,
           vendedor: vendedor
@@ -52,11 +60,13 @@ export async function GET() {
       }),
       ...services.map(service => {
         const dateTime = new Date(service.fecha);
+        // Convertir a hora de Colombia
+        const colombiaDate = new Date(dateTime.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
         return {
           id: service.id,
           tipo: 'servicio-adicional' as const,
-          fecha: dateTime.toISOString().split('T')[0],
-          hora: dateTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+          fecha: colombiaDate.toISOString().split('T')[0],
+          hora: colombiaDate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }),
           descripcion: service.descripcion,
           monto: service.monto,
           signo: '+' as const,
@@ -65,11 +75,13 @@ export async function GET() {
       }),
       ...expenses.map(expense => {
         const dateTime = new Date(expense.fecha);
+        // Convertir a hora de Colombia
+        const colombiaDate = new Date(dateTime.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
         return {
           id: expense.id,
           tipo: 'ingreso-producto' as const,
-          fecha: dateTime.toISOString().split('T')[0],
-          hora: dateTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+          fecha: colombiaDate.toISOString().split('T')[0],
+          hora: colombiaDate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }),
           descripcion: expense.descripcion,
           monto: expense.monto,
           signo: '-' as const
