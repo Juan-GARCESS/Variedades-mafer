@@ -2,7 +2,11 @@
 
 Sistema completo de gestión para papelería desarrollado con Next.js, React, TypeScript y Tailwind CSS v4.0. Diseño minimalista en blanco y negro.
 
-## 🚀 Características
+## � Deploy a Vercel
+
+**Ver [DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md) para instrucciones completas de deployment.**
+
+## �🚀 Características
 
 - **Autenticación segura** con contraseñas encriptadas
 - **Dashboard interactivo** con métricas en tiempo real

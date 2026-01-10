@@ -1,10 +1,37 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Obtener userId de los headers
+    const userEmail = request.headers.get('x-user-email');
+    
+    if (!userEmail) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    }
+    
+    const user = await prisma.user.findUnique({
+      where: { email: userEmail }
+    });
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+    }
+    
+    // Si es empleado, solo ver sus ventas. Si es admin, ver todas
+    const whereClause = user.role === 'admin' ? {} : { userId: user.id };
+    
     const sales = await prisma.sale.findMany({
+      where: whereClause,
       include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
+        },
         items: {
           include: {
             product: true
@@ -20,6 +47,12 @@ export async function GET() {
       fecha: sale.fecha.toISOString().split('T')[0],
       total: sale.total,
       estado: sale.estado,
+      user: sale.user ? {
+        id: sale.user.id,
+        name: sale.user.name,
+        email: sale.user.email,
+        role: sale.user.role
+      } : null,
       productos: sale.items.map(item => ({
         productoId: item.productId,
         cantidad: item.cantidad,
@@ -36,6 +69,21 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    // Obtener userId de los headers
+    const userEmail = request.headers.get('x-user-email');
+    
+    if (!userEmail) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    }
+    
+    const user = await prisma.user.findUnique({
+      where: { email: userEmail }
+    });
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+    }
+    
     const body = await request.json();
     const { productos, estado } = body;
     
@@ -73,11 +121,20 @@ export async function POST(request: Request) {
         data: {
           total,
           estado: estado || 'completada',
+          userId: user.id,
           items: {
             create: productosVenta
           }
         },
         include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true
+            }
+          },
           items: {
             include: {
               product: true
@@ -106,6 +163,12 @@ export async function POST(request: Request) {
       fecha: nuevaVenta.fecha.toISOString().split('T')[0],
       total: nuevaVenta.total,
       estado: nuevaVenta.estado,
+      user: nuevaVenta.user ? {
+        id: nuevaVenta.user.id,
+        name: nuevaVenta.user.name,
+        email: nuevaVenta.user.email,
+        role: nuevaVenta.user.role
+      } : null,
       productos: nuevaVenta.items.map(item => ({
         productoId: item.productId,
         cantidad: item.cantidad,

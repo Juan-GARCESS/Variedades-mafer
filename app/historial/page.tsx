@@ -24,6 +24,7 @@ export default function HistorialPage() {
   const [filteredData, setFilteredData] = useState<HistoryEntry[]>([]);
   const [filterType, setFilterType] = useState<'todos' | 'ingresos' | 'egresos'>('todos');
   const [filterServiceType, setFilterServiceType] = useState<string>('todos');
+  const [filterPeriod, setFilterPeriod] = useState<'todos' | 'diario' | 'mensual' | 'anual'>('todos');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -44,7 +45,7 @@ export default function HistorialPage() {
   useEffect(() => {
     applyFilters();
     setCurrentPage(1); // Reset to first page when filters change
-  }, [historyData, filterType, filterServiceType, startDate, endDate]);
+  }, [historyData, filterType, filterServiceType, filterPeriod, startDate, endDate]);
 
   const fetchHistory = async () => {
     try {
@@ -63,6 +64,26 @@ export default function HistorialPage() {
 
   const applyFilters = () => {
     let filtered = [...historyData];
+    
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    // Filtrar por período
+    if (filterPeriod === 'diario') {
+      const todayStr = today.toISOString().split('T')[0];
+      filtered = filtered.filter(entry => entry.fecha === todayStr);
+    } else if (filterPeriod === 'mensual') {
+      filtered = filtered.filter(entry => {
+        const entryDate = new Date(entry.fecha);
+        return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
+      });
+    } else if (filterPeriod === 'anual') {
+      filtered = filtered.filter(entry => {
+        const entryDate = new Date(entry.fecha);
+        return entryDate.getFullYear() === currentYear;
+      });
+    }
 
     // Filtrar por tipo
     if (filterType === 'ingresos') {
@@ -76,12 +97,14 @@ export default function HistorialPage() {
       filtered = filtered.filter(entry => entry.serviceTypeName === filterServiceType);
     }
 
-    // Filtrar por fechas
-    if (startDate) {
-      filtered = filtered.filter(entry => entry.fecha >= startDate);
-    }
-    if (endDate) {
-      filtered = filtered.filter(entry => entry.fecha <= endDate);
+    // Filtrar por fechas personalizadas (solo si el período es 'todos')
+    if (filterPeriod === 'todos') {
+      if (startDate) {
+        filtered = filtered.filter(entry => entry.fecha >= startDate);
+      }
+      if (endDate) {
+        filtered = filtered.filter(entry => entry.fecha <= endDate);
+      }
     }
 
     setFilteredData(filtered);
@@ -174,7 +197,23 @@ export default function HistorialPage() {
             <h2 className="text-base sm:text-lg font-semibold text-black">Filtros</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                Período
+              </label>
+              <select
+                value={filterPeriod}
+                onChange={(e) => setFilterPeriod(e.target.value as any)}
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black"
+              >
+                <option value="todos">Personalizado</option>
+                <option value="diario">Hoy</option>
+                <option value="mensual">Este Mes</option>
+                <option value="anual">Este Año</option>
+              </select>
+            </div>
+
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                 Tipo de Transacción
@@ -209,25 +248,27 @@ export default function HistorialPage() {
 
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                Fecha Inicio
+                Fecha Inicio {filterPeriod !== 'todos' && <span className="text-xs text-gray-400">(deshabilitado)</span>}
               </label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black"
+                disabled={filterPeriod !== 'todos'}
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
             </div>
 
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                Fecha Fin
+                Fecha Fin {filterPeriod !== 'todos' && <span className="text-xs text-gray-400">(deshabilitado)</span>}
               </label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black"
+                disabled={filterPeriod !== 'todos'}
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
             </div>
           </div>

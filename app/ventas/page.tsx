@@ -5,12 +5,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
-import { ShoppingCart, Plus, Calendar } from 'lucide-react';
+import { ShoppingCart, Plus, Calendar, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Sale {
   id: string;
   fecha: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  } | null;
   productos: {
     productoId: string;
     cantidad: number;
@@ -38,6 +44,7 @@ export default function VentasPage() {
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<{productoId: string, cantidad: number}[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const itemsPerPage = 15;
 
   useEffect(() => {
@@ -55,7 +62,11 @@ export default function VentasPage() {
 
   const fetchSales = async () => {
     try {
-      const response = await fetch('/api/ventas');
+      const response = await fetch('/api/ventas', {
+        headers: {
+          'x-user-email': user?.email || ''
+        }
+      });
       if (!response.ok) {
         setSales([]);
         return;
@@ -94,16 +105,38 @@ export default function VentasPage() {
   const handleSubmitSale = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevenir doble submit
+    if (isSubmitting) {
+      return;
+    }
+    
     if (selectedProducts.length === 0) {
       showToast('Agrega al menos un producto a la venta', 'info');
       return;
     }
+    
+    // Validar que todos los productos tengan cantidad mayor a 0
+    const hasInvalidQuantity = selectedProducts.some(p => p.cantidad <= 0);
+    if (hasInvalidQuantity) {
+      showToast('Todas las cantidades deben ser mayores a 0', 'error');
+      return;
+    }
+    
+    // Validar que todos los productos estén seleccionados
+    const hasEmptyProduct = selectedProducts.some(p => !p.productoId);
+    if (hasEmptyProduct) {
+      showToast('Selecciona todos los productos', 'error');
+      return;
+    }
+    
+    setIsSubmitting(true);
     
     try {
       const response = await fetch('/api/ventas', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-email': user?.email || ''
         },
         body: JSON.stringify({
           productos: selectedProducts,
@@ -116,18 +149,48 @@ export default function VentasPage() {
         setShowModal(false);
         setSelectedProducts([]);
         fetchSales();
+        fetchProducts(); // Actualizar stock mostrado
       } else {
-        showToast('Error al registrar la venta', 'error');
+        const errorData = await response.json();
+        showToast(errorData.error || 'Error al registrar la venta', 'error');
       }
     } catch (error) {
       console.error('Error al registrar venta:', error);
       showToast('Error al registrar la venta', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleViewDetails = (sale: Sale) => {
     setSelectedSale(sale);
     setShowDetailsModal(true);
+  };
+
+  const handleDeleteSale = async (saleId: string) => {
+    if (!confirm('¿Estás seguro de eliminar esta venta? El stock se devolverá automáticamente.')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/ventas/${saleId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-user-email': user?.email || ''
+        }
+      });
+      
+      if (response.ok) {
+        showToast('Venta eliminada exitosamente', 'success');
+        fetchSales();
+      } else {
+        const data = await response.json();
+        showToast(data.error || 'Error al eliminar la venta', 'error');
+      }
+    } catch (error) {
+      console.error('Error al eliminar venta:', error);
+      showToast('Error al eliminar la venta', 'error');
+    }
   };
 
   // Pagination logic
@@ -180,6 +243,11 @@ export default function VentasPage() {
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Fecha
                 </th>
+                {user?.role === 'admin' && (
+                  <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Vendedor
+                  </th>
+                )}
                 <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Productos
                 </th>
@@ -203,6 +271,14 @@ export default function VentasPage() {
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                     {sale.fecha}
                   </td>
+                  {user?.role === 'admin' && (
+                    <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{sale.user?.name || 'Sin asignar'}</span>
+                        <span className="text-xs text-gray-500">{sale.user?.email || '-'}</span>
+                      </div>
+                    </td>
+                  )}
                   <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-900">
                     <div className="space-y-1">
                       {sale.productos.slice(0, 2).map((item, idx) => {
@@ -231,12 +307,22 @@ export default function VentasPage() {
                     </span>
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
-                    <button 
-                      onClick={() => handleViewDetails(sale)}
-                      className="text-black hover:text-gray-600 px-2 sm:px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-xs sm:text-sm"
-                    >
-                      Ver
-                    </button>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handleViewDetails(sale)}
+                        className="text-black hover:text-gray-600 px-2 sm:px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-xs sm:text-sm"
+                      >
+                        Ver
+                      </button>
+                      {user?.role === 'admin' && (
+                        <button 
+                          onClick={() => handleDeleteSale(sale.id)}
+                          className="text-red-600 hover:text-red-800 px-2 sm:px-3 py-1 border border-red-300 rounded hover:bg-red-50 text-xs sm:text-sm"
+                        >
+                          <Trash2 size={14} className="inline" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -352,17 +438,19 @@ export default function VentasPage() {
                   onClick={() => {
                     setShowModal(false);
                     setSelectedProducts([]);
+                    setIsSubmitting(false);
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  disabled={isSubmitting}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  disabled={selectedProducts.length === 0}
-                  className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+                  disabled={selectedProducts.length === 0 || isSubmitting}
+                  className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  Registrar Venta
+                  {isSubmitting ? 'Registrando...' : 'Registrar Venta'}
                 </button>
               </div>
             </form>

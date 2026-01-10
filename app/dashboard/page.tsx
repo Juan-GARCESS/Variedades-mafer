@@ -37,6 +37,11 @@ export default function DashboardPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [productosMasVendidos, setProductosMasVendidos] = useState<ProductoMasVendido[]>([]);
+  const [ventasStats, setVentasStats] = useState({
+    diario: { ingresos: 0, egresos: 0, balance: 0, cantidadVentas: 0 },
+    mensual: { ingresos: 0, egresos: 0, balance: 0, cantidadVentas: 0 },
+    anual: { ingresos: 0, egresos: 0, balance: 0, cantidadVentas: 0 }
+  });
   const [stats, setStats] = useState({
     totalProductos: 0,
     productosStockBajo: 0,
@@ -55,6 +60,7 @@ export default function DashboardPage() {
       fetchProducts();
       fetchStats();
       fetchProductosMasVendidos();
+      fetchVentasStats();
     }
   }, [user]);
 
@@ -70,29 +76,46 @@ export default function DashboardPage() {
     setProductosMasVendidos(data);
   };
 
+  const fetchVentasStats = async () => {
+    const response = await fetch('/api/dashboard/ventas-stats');
+    const data = await response.json();
+    setVentasStats(data);
+  };
+
   const fetchStats = async () => {
-    const productsRes = await fetch('/api/productos');
-    const products = await productsRes.json();
-    
-    const ventasRes = await fetch('/api/ventas');
-    const ventas = await ventasRes.json();
-    
-    const serviciosRes = await fetch('/api/servicios');
-    const servicios = await serviciosRes.json();
+    try {
+      const productsRes = await fetch('/api/productos');
+      const products = await productsRes.json();
+      
+      const ventasRes = await fetch('/api/ventas', {
+        headers: {
+          'x-user-email': user?.email || ''
+        }
+      });
+      const ventas = ventasRes.ok ? await ventasRes.json() : [];
+      
+      const serviciosRes = await fetch('/api/servicios');
+      const servicios = await serviciosRes.json();
 
-    const today = new Date().toISOString().split('T')[0];
-    const ventasHoy = ventas.filter((v: any) => v.fecha === today);
-    const serviciosHoy = servicios.filter((s: any) => s.fecha === today);
+      const today = new Date().toISOString().split('T')[0];
+      const ventasArray = Array.isArray(ventas) ? ventas : [];
+      const serviciosArray = Array.isArray(servicios) ? servicios : [];
+      
+      const ventasHoy = ventasArray.filter((v: any) => v.fecha === today);
+      const serviciosHoy = serviciosArray.filter((s: any) => s.fecha === today);
 
-    const ingresoVentas = ventas.reduce((sum: number, v: any) => sum + v.total, 0);
-    const ingresoServicios = servicios.reduce((sum: number, s: any) => sum + s.monto, 0);
+      const ingresoVentas = ventasArray.reduce((sum: number, v: any) => sum + v.total, 0);
+      const ingresoServicios = serviciosArray.reduce((sum: number, s: any) => sum + s.monto, 0);
 
-    setStats({
-      totalProductos: products.length,
-      productosStockBajo: products.filter((p: Product) => p.stock <= p.stockMinimo).length,
-      ventasHoy: ventasHoy.length + serviciosHoy.length,
-      ingresosTotales: ingresoVentas + ingresoServicios
-    });
+      setStats({
+        totalProductos: products.length,
+        productosStockBajo: products.filter((p: Product) => p.stock <= p.stockMinimo).length,
+        ventasHoy: ventasHoy.length + serviciosHoy.length,
+        ingresosTotales: ingresoVentas + ingresoServicios
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
   };
 
   if (isLoading || !user) {
@@ -147,6 +170,88 @@ export default function DashboardPage() {
             </div>
             <p className="text-2xl sm:text-3xl font-bold text-black">{stats.productosStockBajo}</p>
             <p className="text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2">Requieren reabastecimiento</p>
+          </div>
+        </div>
+
+        {/* Nueva sección: Resumen de Ventas */}
+        <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 shadow-sm mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-bold text-black mb-4 flex items-center">
+            <TrendingUp className="mr-2" size={18} />
+            <span>Resumen de Ventas</span>
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Ventas Diarias */}
+            <div className="bg-linear-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+              <h3 className="text-sm font-semibold text-blue-900 mb-3">HOY</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-blue-700">Ingresos:</span>
+                  <span className="text-sm font-bold text-green-600">${ventasStats.diario.ingresos.toLocaleString('es-CO')}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-blue-700">Egresos:</span>
+                  <span className="text-sm font-bold text-red-600">${ventasStats.diario.egresos.toLocaleString('es-CO')}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-blue-300">
+                  <span className="text-xs font-semibold text-blue-900">Balance:</span>
+                  <span className={`text-sm font-bold ${ventasStats.diario.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${ventasStats.diario.balance.toLocaleString('es-CO')}
+                  </span>
+                </div>
+                <div className="text-xs text-blue-600 mt-2">
+                  {ventasStats.diario.cantidadVentas} transacciones
+                </div>
+              </div>
+            </div>
+
+            {/* Ventas Mensuales */}
+            <div className="bg-linear-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+              <h3 className="text-sm font-semibold text-purple-900 mb-3">ESTE MES</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-purple-700">Ingresos:</span>
+                  <span className="text-sm font-bold text-green-600">${ventasStats.mensual.ingresos.toLocaleString('es-CO')}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-purple-700">Egresos:</span>
+                  <span className="text-sm font-bold text-red-600">${ventasStats.mensual.egresos.toLocaleString('es-CO')}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-purple-300">
+                  <span className="text-xs font-semibold text-purple-900">Balance:</span>
+                  <span className={`text-sm font-bold ${ventasStats.mensual.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${ventasStats.mensual.balance.toLocaleString('es-CO')}
+                  </span>
+                </div>
+                <div className="text-xs text-purple-600 mt-2">
+                  {ventasStats.mensual.cantidadVentas} transacciones
+                </div>
+              </div>
+            </div>
+
+            {/* Ventas Anuales */}
+            <div className="bg-linear-to-br from-amber-50 to-amber-100 rounded-lg p-4 border border-amber-200">
+              <h3 className="text-sm font-semibold text-amber-900 mb-3">ESTE AÑO</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-amber-700">Ingresos:</span>
+                  <span className="text-sm font-bold text-green-600">${ventasStats.anual.ingresos.toLocaleString('es-CO')}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-amber-700">Egresos:</span>
+                  <span className="text-sm font-bold text-red-600">${ventasStats.anual.egresos.toLocaleString('es-CO')}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-amber-300">
+                  <span className="text-xs font-semibold text-amber-900">Balance:</span>
+                  <span className={`text-sm font-bold ${ventasStats.anual.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${ventasStats.anual.balance.toLocaleString('es-CO')}
+                  </span>
+                </div>
+                <div className="text-xs text-amber-600 mt-2">
+                  {ventasStats.anual.cantidadVentas} transacciones
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

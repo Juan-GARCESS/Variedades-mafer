@@ -17,6 +17,7 @@ model User {
   password  String
   name      String
   role      String   @default("employee")
+  sales     Sale[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -49,6 +50,8 @@ model Sale {
   fecha     DateTime   @default(now())
   total     Float
   estado    String     @default("completada")
+  userId    String?
+  user      User?      @relation(fields: [userId], references: [id])
   items     SaleItem[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt

@@ -7,7 +7,7 @@ export async function GET() {
       include: {
         categoria: true
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { nombre: 'asc' }
     });
     return NextResponse.json(products);
   } catch (error) {
